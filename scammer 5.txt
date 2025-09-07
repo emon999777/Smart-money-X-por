@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CashReward App</title>
+    
+    <!-- Aapka Naya Ad Code -->
+    <script src='//libtl.com/sdk.js' data-zone='9391539' data-sdk='show_9391539'></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #121212; color: #ffffff; }
+        .dark-bg { background-color: #121212; }
+        .card-bg { background-color: #1e1e1e; }
+        .border-accent { border-color: #ff8c00; }
+        .text-accent { color: #ff8c00; }
+        .btn, .btn-accent, .btn-outline-accent { transition: all 0.2s ease-in-out; transform: scale(1); }
+        .btn:active, .btn-accent:active, .btn-outline-accent:active { transform: scale(0.95); }
+        .btn-accent { background-color: #ff8c00; color: #121212; font-weight: bold; }
+        .btn-accent:hover { background-color: #e67e00; }
+        .btn-outline-accent { border: 1px solid #ff8c00; color: #ff8c00; }
+        .btn-outline-accent:hover { background-color: #ff8c00; color: #121212; }
+        .input-field { background-color: #2c2c2c; border: 1px solid #444; }
+        .main-page { display: none; }
+        .main-page.active { display: flex; animation: fadeIn 0.5s ease-in-out; }
+        .sub-page { display: none; }
+        .sub-page.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        .bottom-nav a.active { color: #ff8c00; }
+        .notification-dot {
+            position: absolute; top: -2px; right: -2px; width: 10px; height: 10px;
+            background-color: #ef4444; border-radius: 50%; border: 2px solid #121212; display: none;
+        }
+        .timer { 
+            background-color: #ff8c00; 
+            color: #121212; 
+            padding: 2px 6px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        .pending { 
+            background-color: #f59e0b; 
+            color: white; 
+            padding: 2px 6px; 
+            border-radius: 12px; 
+            font-size: 12px; 
+            font-weight: bold;
+            margin-left: 5px;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="max-w-md mx-auto">
+
+    <!-- App Loader -->
+    <div id="loader" class="hidden fixed inset-0 dark-bg bg-opacity-75 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-accent"></div>
+    </div>
+
+    <!-- Telegram Init Data -->
+    <script>
+        // Function to get Telegram init data
+        function getTelegramInitData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                user: urlParams.get('user') || 'TelegramUser',
+                username: urlParams.get('username') || 'telegram_user',
+                referral: urlParams.get('ref') || null
+            };
+        }
+    </script>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="min-h-screen flex-col main-page active">
+        <header class="flex items-center justify-between p-4 sticky top-0 bg-opacity-80 backdrop-blur-md z-10 dark-bg">
+            <h1 class="text-xl font-bold">CashReward</h1>
+            <div class="flex items-center space-x-4">
+                <div id="notification-bell" class="relative cursor-pointer">
+                    <i data-lucide="bell" class="w-6 h-6"></i>
+                    <div id="notification-dot" class="notification-dot"></div>
+                </div>
+                <i data-lucide="user" class="w-6 h-6 cursor-pointer" onclick="navigateTo('profile-page')"></i>
+            </div>
+        </header>
+
+        <main class="flex-grow">
+            <!-- Home Page -->
+            <div id="home-page" class="p-4 space-y-6 sub-page active">
+                <div class="card-bg p-4 rounded-lg flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-400 text-sm">আপনার ব্যালেন্স</p>
+                        <p class="text-3xl font-bold">৳<span id="coin-balance">0</span></p>
+                    </div>
+                    <button id="home-withdraw-btn" class="bg-white text-black font-semibold px-6 py-2 rounded-lg">উইথড্র</button>
+                </div>
+                <section>
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-semibold">ডেইলি টাস্কস</h2>
+                            <p class="text-sm text-gray-400 mb-4">টাস্ক কমপ্লিট করে রিওয়ার্ড নিন</p>
+                        </div>
+                        <p class="text-sm text-gray-400">অ্যাডস বাকি: <span id="ads-left-count">...</span></p>
+                    </div>
+                    <div class="space-y-3">
+                        <!-- Only one claim button as requested -->
+                        <div class="bg-orange-500 p-3 rounded-lg flex items-center justify-between text-black">
+                            <div class="flex items-center space-x-3"><span class="text-3xl">🤩</span><div><h3 class="font-bold">শর্ট অ্যাড দেখুন</h3><p class="text-xs font-medium">রিওয়ার্ডেড ইন্টারস্টিশিয়াল</p></div></div>
+                            <button class="bg-white text-orange-500 font-bold px-6 py-2 rounded-lg text-sm btn" onclick="claimReward('interstitial')">ক্লেইম</button>
+                        </div>
+                        
+                        <!-- Video Tutorial Button -->
+                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 p-3 rounded-lg flex items-center justify-between text-white">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-3xl">▶️</span>
+                                <div>
+                                    <h3 class="font-bold">ভিডিও টিউটোরিয়াল</h3>
+                                    <p class="text-xs font-medium">দেখুন এবং শিখুন</p>
+                                </div>
+                            </div>
+                            <button class="bg-white text-blue-600 font-bold px-6 py-2 rounded-lg text-sm btn" onclick="showVideoTutorial()">ওয়াচ</button>
+                        </div>
+                        
+                        <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-3 rounded-lg flex items-center justify-between text-white">
+                            <div class="flex items-center space-x-3"><span class="text-3xl">💼</span><div><h3 class="font-bold">ডেইলি জবস</h3><p class="text-xs font-medium">দেখুন এবং ৳5 উপার্জন করুন</p></div></div>
+                            <button class="bg-white text-purple-600 font-bold px-6 py-2 rounded-lg text-sm btn" onclick="navigateTo('daily-jobs-page')">স্টার্ট</button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Wallet Page -->
+            <div id="wallet-page" class="p-4 space-y-6 sub-page">
+                <h2 class="text-xl font-bold text-center">আমার ওয়ালেট</h2>
+                <div class="card-bg p-4 rounded-lg">
+                    <h3 class="font-semibold mb-3">উপার্জন উত্তোলন</h3>
+                    <p class="text-sm text-gray-400 mb-1">বর্তমান ব্যালেন্স: <span class="font-bold text-accent">৳<span id="wallet-coin-balance">0</span></span></p>
+                    <p class="text-sm text-gray-400 mb-2">সর্বনিম্ন উত্তোলন: ৳<span id="min-withdrawal-info">20</span></p>
+                    <input id="withdraw-amount" type="number" placeholder="টাকার পরিমাণ লিখুন" class="w-full p-3 rounded-lg input-field mb-3">
+                    <select id="withdraw-method" class="w-full p-3 rounded-lg input-field mb-3">
+                        <option value="">পদ্ধতি নির্বাচন করুন</option>
+                        <option value="Bkash">বিকাশ</option>
+                        <option value="Nagad">নগদ</option>
+                        <option value="UPI">ইউপিআই</option>
+                        <option value="Paytm">পেটিএম</option>
+                    </select>
+                    <div id="payment-details-container"></div>
+                    <button id="withdraw-btn" class="w-full p-3 rounded-lg btn-accent mt-3">উত্তোলন রিকোয়েস্ট</button>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-3">উত্তোলন ইতিহাস</h3>
+                    <div id="withdrawal-history-list" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- Refer Page -->
+            <div id="refer-page" class="p-4 space-y-6 sub-page">
+                 <h2 class="text-xl font-bold text-center">রেফার এবং আর্ন</h2>
+                 <div class="card-bg p-6 rounded-lg text-center">
+                     <p class="text-gray-400 mb-2">আপনার রেফারেল লিংক</p>
+                     <div class="bg-gray-800 p-3 rounded-lg flex items-center justify-center mb-4">
+                         <span id="referral-link" class="text-sm font-medium break-all">লোড হচ্ছে...</span>
+                         <button id="copy-link-btn" class="ml-4"><i data-lucide="copy" class="w-6 h-6 text-gray-400"></i></button>
+                     </div>
+                     <p class="text-sm text-gray-300 mb-2">বন্ধুদের সাথে শেয়ার করুন এবং ৳20 উপার্জন করুন যখন তারা জয়েন করে</p>
+                     <p class="text-sm text-gray-300">তারা পাবে ৳10 জয়েনিং বোনাস</p>
+                 </div>
+                 
+                 <!-- Referral Statistics -->
+                 <div class="card-bg p-4 rounded-lg">
+                    <h3 class="font-semibold mb-3 text-center">আপনার রেফারেল পরিসংখ্যান</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-800 p-3 rounded-lg text-center">
+                            <p class="text-gray-400 text-sm">মোট রেফারেল</p>
+                            <p class="text-xl font-bold" id="total-referrals">0</p>
+                        </div>
+                        <div class="bg-gray-800 p-3 rounded-lg text-center">
+                            <p class="text-gray-400 text-sm">রেফারেল থেকে আয়</p>
+                            <p class="text-xl font-bold">৳<span id="referral-earnings">0</span></p>
+                        </div>
+                    </div>
+                 </div>
+                 
+                 <button id="share-btn" class="w-full p-3 rounded-lg btn-accent">লিংক শেয়ার করুন</button>
+            </div>
+
+            <!-- Profile Page -->
+            <div id="profile-page" class="p-4 space-y-6 sub-page">
+                <h2 class="text-xl font-bold text-center mb-4">প্রোফাইল</h2>
+                <div class="flex flex-col items-center">
+                    <img src="https://placehold.co/100x100/1e1e1e/ff8c00?text=U" class="rounded-full mb-2">
+                    <h2 id="profile-name" class="text-xl font-bold">Telegram User</h2>
+                    <p id="profile-username" class="text-gray-400">@telegram_user</p>
+                </div>
+                <div class="card-bg p-4 rounded-lg mt-4">
+                    <h3 class="font-semibold mb-2">অ্যাকাউন্ট তথ্য</h3>
+                    <div class="flex justify-between mb-1">
+                        <span class="text-gray-400">জয়েন করেছেন:</span>
+                        <span id="joined-via">Telegram</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">রেফারেল কোড:</span>
+                        <span id="profile-referral-code">TG1234</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notifications Page -->
+            <div id="notifications-page" class="p-4 space-y-4 sub-page">
+                <h2 class="text-xl font-bold text-center">নোটিফিকেশন</h2>
+                <div id="notifications-list" class="space-y-3"></div>
+            </div>
+
+            <!-- Daily Jobs Page -->
+            <div id="daily-jobs-page" class="p-4 space-y-6 sub-page">
+                <div class="flex items-center justify-between mb-4">
+                    <button onclick="navigateTo('home-page')" class="flex items-center text-gray-400 hover:text-white">
+                        <i data-lucide="arrow-left" class="w-5 h-5 mr-2"></i>
+                        পিছনে
+                    </button>
+                    <h2 class="text-xl font-bold">ডেইলি জবস</h2>
+                    <div></div>
+                </div>
+                
+                <div class="card-bg p-4 rounded-lg text-center">
+                    <h3 class="text-lg font-semibold mb-2">দেখুন এবং আর্ন করুন</h3>
+                    <p class="text-gray-400 text-sm mb-4">নিচের যেকোনো জবে ক্লিক করুন, 15 সেকেন্ডের জন্য অ্যাড দেখুন এবং ৳5 আর্ন করুন!</p>
+                    <div class="flex items-center justify-center space-x-4 text-sm">
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                            <span>অ্যাভেইলেবল</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
+                            <span>কুলডাউন</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="daily-jobs-container" class="space-y-3">
+                    <!-- Job buttons will be dynamically generated here -->
+                </div>
+            </div>
+        </main>
+
+        <nav class="bottom-nav sticky bottom-0 grid grid-cols-4 items-center text-center py-2 card-bg">
+            <a href="#" class="nav-link active" data-page="home-page"><i data-lucide="home" class="mx-auto w-6 h-6"></i><span class="text-xs">হোম</span></a>
+            <a href="#" class="nav-link" data-page="wallet-page"><i data-lucide="wallet" class="mx-auto w-6 h-6"></i><span class="text-xs">ওয়ালেট</span></a>
+            <a href="#" class="nav-link" data-page="refer-page"><i data-lucide="users" class="mx-auto w-6 h-6"></i><span class="text-xs">রেফার</span></a>
+            <a href="#" class="nav-link" data-page="daily-jobs-page"><i data-lucide="briefcase" class="mx-auto w-6 h-6"></i><span class="text-xs">ডেইলি জবস</span></a>
+        </nav>
+    </div>
+    
+    <div id="custom-alert" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center">
+            <p id="alert-message" class="mb-4"></p>
+            <button id="alert-ok-btn" class="btn-accent px-6 py-2 rounded-lg">ঠিক আছে</button>
+        </div>
+    </div>
+
+    <!-- Video Tutorial Modal -->
+    <div id="video-tutorial-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">ভিডিও টিউটোরিয়াল</h3>
+                <button onclick="closeVideoTutorial()" class="text-gray-400 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="aspect-w-16 aspect-h-9 bg-gray-700 rounded-lg mb-4">
+                <iframe id="youtube-video" width="100%" height="100%" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            </div>
+            <p class="text-gray-300 mb-4">আমাদের অ্যাপ দিয়ে আরও টাকা উপার্জন করার 방법 জানতে এই টিউটোরিয়ালটি দেখুন!</p>
+            <button class="w-full p-3 rounded-lg btn-accent" onclick="closeVideoTutorial()">বন্ধ করুন</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import Firebase functions
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDBnaXav_M1C45PHs78D7n1QlnR1G9e6SY",
+            authDomain: "arningappbot-a7aca.firebaseapp.com",
+            projectId: "arningappbot-a7aca",
+            storageBucket: "arningappbot-a7aca.firebasestorage.app",
+            messagingSenderId: "357948746475",
+            appId: "1:357948746475:web:e58919995bb8a066d9ecae"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Initialize user data from Telegram
+        const telegramData = getTelegramInitData();
+        let userData = {
+            uid: 'telegram_' + telegramData.username,
+            name: telegramData.user,
+            username: telegramData.username,
+            balance: 0,
+            referralCode: 'TG' + Math.random().toString(36).substring(2, 8).toUpperCase(),
+            referredBy: telegramData.referral || null,
+            lastNotificationCheck: new Date(),
+            dailyAdCount: 0,
+            lastAdWatchDate: new Date().toISOString().split('T')[0],
+            isBlocked: false,
+            joinedVia: 'Telegram',
+            totalReferrals: 0,
+            referralEarnings: 0
+        };
+
+        let appConfig = {
+            minWithdrawal: 20,
+            paymentMethods: ["Bkash", "Nagad", "UPI", "Paytm"],
+            dailyAdLimit: 10,
+            jobRewardAmount: 5,
+            referralBonus: 20,
+            signupBonus: 10,
+            jobCooldownHours: 12,
+            youtubeVideoUrl: "https://www.youtube.com/embed/dQw4w9WgXcQ"
+        };
+
+        const loader = document.getElementById('loader');
+        const coinBalanceEl = document.getElementById('coin-balance');
+        const walletCoinBalanceEl = document.getElementById('wallet-coin-balance');
+        const profileNameEl = document.getElementById('profile-name');
+        const profileUsernameEl = document.getElementById('profile-username');
+        const referralLinkEl = document.getElementById('referral-link');
+        const minWithdrawalInfoEl = document.getElementById('min-withdrawal-info');
+        const withdrawMethodSelect = document.getElementById('withdraw-method');
+        const notificationDot = document.getElementById('notification-dot');
+        const adsLeftCountEl = document.getElementById('ads-left-count');
+        const paymentDetailsContainer = document.getElementById('payment-details-container');
+        const joinedViaEl = document.getElementById('joined-via');
+        const profileReferralCodeEl = document.getElementById('profile-referral-code');
+        const totalReferralsEl = document.getElementById('total-referrals');
+        const referralEarningsEl = document.getElementById('referral-earnings');
+        const youtubeVideoEl = document.getElementById('youtube-video');
+
+        let currentJobTracking = null;
+        let jobTimers = {};
+
+        window.onload = async () => {
+            lucide.createIcons();
+            setupEventListeners();
+            await fetchUserData();
+            await fetchAppConfig();
+            checkReferralBonus();
+            updateUI();
+            setupDailyJobs();
+            startCooldownTimers();
+        };
+
+        async function fetchUserData() {
+            if (!userData.uid) return;
+            const userRef = doc(db, "users", userData.uid);
+            try {
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    userData = { ...userData, ...data };
+                } else {
+                    await setDoc(userRef, {
+                        ...userData,
+                        createdAt: serverTimestamp()
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching user data:", error);
+            }
+        }
+
+        async function fetchAppConfig() {
+            const configRef = doc(db, "config", "main");
+            try {
+                const configSnap = await getDoc(configRef);
+                if (configSnap.exists()) {
+                    appConfig = { ...appConfig, ...configSnap.data() };
+                    youtubeVideoEl.src = appConfig.youtubeVideoUrl;
+                } else {
+                    await setDoc(configRef, appConfig);
+                }
+            } catch (error) {
+                console.error("Error fetching app config:", error);
+            }
+        }
+
+        function checkReferralBonus() {
+            if (userData.referredBy) {
+                updateBalance(appConfig.signupBonus);
+                showAlert(`Welcome! You received ৳${appConfig.signupBonus} as a signup bonus.`);
+                updateReferrerStats(userData.referredBy);
+            }
+        }
+        
+        async function updateReferrerStats(referralCode) {
+            try {
+                const usersRef = collection(db, "users");
+                const q = query(usersRef, where("referralCode", "==", referralCode));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    const referrerDoc = querySnapshot.docs[0];
+                    const referrerRef = doc(db, "users", referrerDoc.id);
+                    const referrerData = referrerDoc.data();
+                    
+                    await updateDoc(referrerRef, {
+                        totalReferrals: increment(1),
+                        referralEarnings: increment(appConfig.referralBonus),
+                        balance: increment(appConfig.referralBonus)
+                    });
+                }
+            } catch (error) {
+                console.error("Error updating referrer stats:", error);
+            }
+        }
+
+        function updateUI() {
+            const balance = userData.balance || 0;
+            coinBalanceEl.textContent = balance;
+            walletCoinBalanceEl.textContent = balance;
+            profileNameEl.textContent = userData.name || 'Telegram User';
+            profileUsernameEl.textContent = '@' + userData.username;
+            joinedViaEl.textContent = userData.joinedVia;
+            profileReferralCodeEl.textContent = userData.referralCode;
+            totalReferralsEl.textContent = userData.totalReferrals || 0;
+            referralEarningsEl.textContent = userData.referralEarnings || 0;
+            minWithdrawalInfoEl.textContent = appConfig.minWithdrawal;
+            
+            const currentUrl = window.location.href.split('?')[0];
+            referralLinkEl.textContent = `${currentUrl}?ref=${userData.referralCode}`;
+            
+            withdrawMethodSelect.innerHTML = '';
+            appConfig.paymentMethods.forEach(method => {
+                const option = document.createElement('option');
+                option.value = method;
+                option.textContent = method;
+                withdrawMethodSelect.appendChild(option);
+            });
+            
+            updateDynamicPaymentFields();
+            updateAdsLeftCount();
+        }
+
+        function updateAdsLeftCount() {
+            const today = new Date().toISOString().split('T')[0];
+            if (userData.lastAdWatchDate !== today) {
+                userData.dailyAdCount = 0;
+            }
+            const adsLeft = Math.max(0, appConfig.dailyAdLimit - userData.dailyAdCount);
+            adsLeftCountEl.textContent = adsLeft;
+        }
+
+        function updateDynamicPaymentFields() {
+            const selectedMethod = withdrawMethodSelect.value;
+            let placeholder = "বিবরণ লিখুন";
+            if (selectedMethod === 'Bkash') placeholder = "আপনার বিকাশ নম্বর লিখুন";
+            if (selectedMethod === 'Nagad') placeholder = "আপনার নগদ নম্বর লিখুন";
+            if (selectedMethod === 'UPI') placeholder = "আপনার UPI ID লিখুন";
+            if (selectedMethod === 'Paytm') placeholder = "আপনার Paytm নম্বর লিখুন";
+            paymentDetailsContainer.innerHTML = `<input id="payment-detail-input" type="text" placeholder="${placeholder}" class="w-full p-3 rounded-lg input-field">`;
+        }
+
+        function navigateTo(pageId) {
+            document.querySelectorAll('.sub-page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active', 'text-accent');
+                if (link.dataset.page === pageId) link.classList.add('active', 'text-accent');
+            });
+            
+            if (pageId === 'wallet-page') {
+                loadWithdrawalHistory();
+            } else if (pageId === 'refer-page') {
+                loadReferralStats();
+            } else if (pageId === 'daily-jobs-page') {
+                updateJobButtonStates();
+            }
+        }
+        window.navigateTo = navigateTo;
+
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const pageId = link.dataset.page;
+                    navigateTo(pageId);
+                });
+            });
+            document.getElementById('notification-bell').addEventListener('click', () => { navigateTo('notifications-page'); loadNotifications(); });
+            document.getElementById('copy-link-btn').addEventListener('click', copyReferralLink);
+            document.getElementById('share-btn').addEventListener('click', shareReferralLink);
+            document.getElementById('withdraw-btn').addEventListener('click', handleWithdrawal);
+            document.getElementById('home-withdraw-btn').addEventListener('click', () => navigateTo('wallet-page'));
+            withdrawMethodSelect.addEventListener('change', updateDynamicPaymentFields);
+            
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('focus', handleWindowFocus);
+        }
+
+        function handleVisibilityChange() {
+            if (!document.hidden && currentJobTracking) {
+                checkJobCompletion();
+            }
+        }
+
+        function handleWindowFocus() {
+            if (currentJobTracking) {
+                setTimeout(() => {
+                    if (currentJobTracking) {
+                        checkJobCompletion();
+                    }
+                }, 100);
+            }
+        }
+
+        function checkJobCompletion() {
+            if (!currentJobTracking) return;
+            
+            const timeSpent = Date.now() - currentJobTracking.startTime;
+            const requiredTime = 15 * 1000;
+            
+            if (timeSpent >= requiredTime) {
+                completeJob(currentJobTracking.jobId, currentJobTracking.type);
+            } else {
+                const remainingSeconds = Math.ceil((requiredTime - timeSpent) / 1000);
+                showAlert(`⚠️ সতর্কবার্তা: আপনি খুব তাড়াতাড়ি ফিরে এসেছেন! অ্যাড দেখার জন্য আরো ${remainingSeconds} সেকেন্ড অপেক্ষা করুন।`);
+            }
+            
+            currentJobTracking = null;
+        }
+
+        async function completeJob(jobId, jobType) {
+            try {
+                let jobLinks = await loadDailyJobLinks();
+                const jobLinkKey = `job${jobId}`;
+                const currentJobLink = jobLinks[jobLinkKey] || '#';
+                
+                const completionData = {
+                    userId: userData.uid,
+                    userName: userData.name,
+                    jobId: jobId,
+                    jobType: jobType,
+                    jobLink: currentJobLink,
+                    completedAt: serverTimestamp(),
+                    coinsEarned: appConfig.jobRewardAmount,
+                    status: "pending"
+                };
+                
+                await addDoc(collection(db, 'job_completions'), completionData);
+                
+                await updateBalance(appConfig.jobRewardAmount);
+                
+                const cooldownUntil = new Date();
+                cooldownUntil.setHours(cooldownUntil.getHours() + appConfig.jobCooldownHours);
+                
+                await addDoc(collection(db, 'job_cooldowns'), {
+                    userId: userData.uid,
+                    jobId: jobId,
+                    jobType: jobType,
+                    cooldownUntil: cooldownUntil,
+                    setAt: serverTimestamp()
+                });
+                
+                showAlert(`🎉 অভিনন্দন! আপনি ৳${appConfig.jobRewardAmount} উপার্জন করেছেন।`);
+                
+                updateJobButtonStates();
+            } catch (error) {
+                console.error("Error completing job:", error);
+                showAlert("কাজ সম্পন্ন করতে সমস্যা হয়েছে।");
+            }
+        }
+
+        async function loadNotifications() {
+            const listEl = document.getElementById('notifications-list');
+            listEl.innerHTML = '<p class="text-gray-400 text-center">কোন নোটিফিকেশন নেই</p>';
+            notificationDot.style.display = 'none';
+        }
+
+        async function loadWithdrawalHistory() {
+            const historyList = document.getElementById('withdrawal-history-list');
+            historyList.innerHTML = '<p class="text-gray-400 text-center">কোন উত্তোলন ইতিহাস নেই</p>';
+            
+            try {
+                const q = query(collection(db, "withdrawals"), where("userId", "==", userData.uid));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    historyList.innerHTML = '';
+                    querySnapshot.forEach(doc => {
+                        const request = doc.data();
+                        const status = request.status;
+                        let statusColor = 'text-yellow-400';
+                        if (status === 'approved') statusColor = 'text-green-400';
+                        else if (status === 'rejected') statusColor = 'text-red-400';
+                        const date = request.requestedAt ? request.requestedAt.toDate().toLocaleDateString() : 'N/A';
+                        historyList.innerHTML += `<div class="card-bg p-3 rounded-lg flex items-center justify-between"><div><p class="font-semibold">৳${request.amount} - ${request.method}</p><p class="text-xs text-gray-400">${date}</p></div><p class="font-bold ${statusColor} capitalize">${status}</p></div>`;
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching withdrawal history: ", error);
+            }
+        }
+        
+        async function loadReferralStats() {
+            try {
+                const userRef = doc(db, "users", userData.uid);
+                const userSnap = await getDoc(userRef);
+                
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    totalReferralsEl.textContent = data.totalReferrals || 0;
+                    referralEarningsEl.textContent = data.referralEarnings || 0;
+                }
+            } catch (error) {
+                console.error("Error loading referral stats:", error);
+            }
+        }
+
+        async function updateBalance(amount) {
+            userData.balance += amount;
+            
+            try {
+                const userRef = doc(db, "users", userData.uid);
+                await updateDoc(userRef, {
+                    balance: userData.balance,
+                    lastUpdated: serverTimestamp()
+                });
+            } catch (error) {
+                console.error("Error updating balance:", error);
+            }
+            
+            updateUI();
+            return userData.balance;
+        }
+
+        async function handleWithdrawal() {
+            const amount = parseInt(document.getElementById('withdraw-amount').value);
+            const method = document.getElementById('withdraw-method').value;
+            const paymentDetailInput = document.getElementById('payment-detail-input');
+            const paymentDetail = paymentDetailInput ? paymentDetailInput.value.trim() : '';
+            const minWithdrawal = appConfig.minWithdrawal;
+
+            if (!amount || amount <= 0) return showAlert("সঠিক পরিমাণ লিখুন");
+            if (amount < minWithdrawal) return showAlert(`সর্বনিম্ন উত্তোলন ৳${minWithdrawal}`);
+            if (amount > userData.balance) return showAlert("পর্যাপ্ত ব্যালেন্স নেই");
+            if (!paymentDetail) return showAlert("পেমেন্ট বিবরণ দিন");
+
+            try {
+                await updateBalance(-amount);
+                
+                await addDoc(collection(db, "withdrawals"), {
+                    userId: userData.uid,
+                    userName: userData.name,
+                    amount: amount,
+                    method: method,
+                    paymentDetail: paymentDetail,
+                    status: "pending",
+                    requestedAt: serverTimestamp()
+                });
+                
+                showAlert("উত্তোলনের অনুরোধ সফলভাবে জমা দেওয়া হয়েছে!");
+                document.getElementById('withdraw-amount').value = '';
+                paymentDetailInput.value = '';
+            } catch (error) {
+                showAlert("Request submit করতে সমস্যা: " + error.message);
+                await updateBalance(amount);
+            }
+        }
+
+        function copyReferralLink() {
+            const textToCopy = referralLinkEl.textContent;
+            const textArea = document.createElement("textarea");
+            textArea.style.position = 'fixed'; textArea.style.top = '-100px';
+            textArea.value = textToCopy;
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showAlert("রেফারেল লিংক কপি হয়েছে!");
+            } catch (err) {
+                showAlert("লিংক কপি করতে ব্যর্থ");
+            }
+            document.body.removeChild(textArea);
+        }
+        
+        function shareReferralLink() {
+            const text = `CashReward এ যোগ দিন এবং টাকা আয় করুন! বোনাস পেতে আমার রেফারেল লিংক ব্যবহার করুন: ${referralLinkEl.textContent}`;
+            if (navigator.share) {
+                navigator.share({ title: 'CashReward এ যোগ দিন!', text: text, url: window.location.href })
+                    .catch((error) => console.error("Share failed:", error));
+            } else {
+                copyReferralLink();
+                showAlert("শেয়ার ফিচার উপলব্ধ নেই। রেফারেল লিংক কপি করা হয়েছে!");
+            }
+        }
+
+        window.claimReward = async function(taskType) {
+            const today = new Date().toISOString().split('T')[0];
+
+            if (userData.lastAdWatchDate !== today) {
+                userData.dailyAdCount = 0;
+                userData.lastAdWatchDate = today;
+                
+                try {
+                    const userRef = doc(db, "users", userData.uid);
+                    await updateDoc(userRef, {
+                        dailyAdCount: 0,
+                        lastAdWatchDate: today
+                    });
+                } catch (error) {
+                    console.error("Error updating daily ad count:", error);
+                }
+            }
+
+            if (userData.dailyAdCount >= appConfig.dailyAdLimit) {
+                return showAlert("আপনি আপনার দৈনিক অ্যাড সীমা অতিক্রম করেছেন");
+            }
+            
+            if (typeof window.show_9391539 !== 'function') {
+                return showAlert("অ্যাড সার্ভিস এখন উপলব্ধ নেই। পরে আবার চেষ্টা করুন");
+            }
+            
+            let adPromise;
+            switch(taskType) {
+                case 'interstitial':
+                    adPromise = window.show_9391539();
+                    break;
+                case 'popup':
+                    adPromise = window.show_9391539('pop');
+                    break;
+                case 'inApp':
+                    adPromise = window.show_9391539({ type: 'inApp', inAppSettings: { frequency: 2, capping: 0.1, interval: 30, timeout: 5, everyPage: false } });
+                    break;
+                case 'miniApp':
+                    adPromise = window.show_9391539();
+                    break;
+                default:
+                    return;
+            }
+
+            adPromise.then(async () => {
+                userData.dailyAdCount++;
+                
+                try {
+                    const userRef = doc(db, "users", userData.uid);
+                    await updateDoc(userRef, {
+                        dailyAdCount: userData.dailyAdCount
+                    });
+                } catch (error) {
+                    console.error("Error updating daily ad count:", error);
+                }
+                
+                let rewardAmount = 0;
+                if (taskType === 'miniApp') {
+                    rewardAmount = 10;
+                } else if (taskType !== 'inApp') {
+                    rewardAmount = 5;
+                }
+
+                if (rewardAmount > 0) {
+                    await updateBalance(rewardAmount);
+                    showAlert(`অভিনন্দন! আপনি ৳${rewardAmount} উপার্জন করেছেন`);
+                }
+                updateAdsLeftCount();
+            }).catch(e => {
+                console.error("Ad error:", e);
+                showAlert('অ্যাড প্রদর্শন করা যায়নি। পরে আবার চেষ্টা করুন');
+            });
+        }
+
+        function showAlert(message) {
+            document.getElementById('alert-message').textContent = message;
+            document.getElementById('custom-alert').classList.remove('hidden');
+            document.getElementById('alert-ok-btn').onclick = () => {
+                document.getElementById('custom-alert').classList.add('hidden');
+            };
+        }
+        window.showAlert = showAlert;
+
+        window.showVideoTutorial = function() {
+            document.getElementById('video-tutorial-modal').classList.remove('hidden');
+        }
+
+        window.closeVideoTutorial = function() {
+            document.getElementById('video-tutorial-modal').classList.add('hidden');
+        }
+
+        async function loadDailyJobLinks() {
+            try {
+                const configRef = doc(db, 'config', 'daily_job_links');
+                const configDoc = await getDoc(configRef);
+                if (configDoc.exists()) {
+                    return configDoc.data();
+                }
+                return {};
+            } catch (error) {
+                console.error("Error loading daily job links:", error);
+                return {};
+            }
+        }
+
+        async function setupDailyJobs() {
+            const jobsContainer = document.getElementById('daily-jobs-container');
+            if (!jobsContainer) return;
+
+            let jobLinks = await loadDailyJobLinks();
+
+            jobsContainer.innerHTML = '';
+            
+            for (let i = 1; i <= 20; i++) {
+                const jobLink = jobLinks[`job${i}`] || '#';
+                const jobDiv = document.createElement('div');
+                jobDiv.className = 'bg-gray-800 p-4 rounded-lg flex items-center justify-between';
+                jobDiv.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">${i}</div>
+                        <div>
+                            <h3 class="text-white font-medium">Watch ads gate reward</h3>
+                            <p class="text-gray-400 text-sm">৳5 আর্ন করুন</p>
+                        </div>
+                    </div>
+                    <button id="job-btn-${i}" onclick="handleJobClick(${i}, '${jobLink}', 'daily')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        শুরু করুন
+                    </button>
+                `;
+                jobDiv.querySelector('button').setAttribute('data-job-link', jobLink);
+                jobsContainer.appendChild(jobDiv);
+            }
+            
+            updateJobButtonStates();
+        }
+
+        window.handleJobClick = async function(jobId, defaultJobLink, jobType) {
+            let jobLinks = await loadDailyJobLinks();
+            const jobLinkKey = `job${jobId}`;
+            const currentJobLink = jobLinks[jobLinkKey] || defaultJobLink;
+            
+            const cooldownKey = `${jobType}_${jobId}`;
+            if (jobTimers[cooldownKey]) {
+                return showAlert("এই কাজটি এখন কুলডাউনে আছে। পরে আবার চেষ্টা করুন");
+            }
+            
+            currentJobTracking = {
+                jobId: jobId,
+                startTime: Date.now(),
+                jobLink: currentJobLink,
+                type: jobType
+            };
+            
+            window.open(currentJobLink, '_blank');
+            
+            showAlert("টাস্ক সম্পূর্ণ করতে 15 সেকেন্ড অপেক্ষা করুন, তারপর এই পৃষ্ঠায় ফিরে আসুন");
+        };
+
+        async function updateJobButtonStates() {
+            Object.values(jobTimers).forEach(timerId => clearInterval(timerId));
+            jobTimers = {};
+            
+            try {
+                const q = query(collection(db, 'job_cooldowns'), 
+                    where('userId', '==', userData.uid),
+                    where('jobType', '==', 'daily')
+                );
+                
+                const querySnapshot = await getDocs(q);
+                const cooldowns = {};
+                
+                querySnapshot.forEach(doc => {
+                    const data = doc.data();
+                    cooldowns[data.jobId] = data.cooldownUntil.toDate();
+                });
+                
+                for (let i = 1; i <= 20; i++) {
+                    const button = document.getElementById(`job-btn-${i}`);
+                    if (!button) continue;
+                    
+                    const cooldownUntil = cooldowns[i];
+                    if (cooldownUntil) {
+                        const now = new Date();
+                        if (now < cooldownUntil) {
+                            const cooldownKey = `daily_${i}`;
+                            startCooldownTimer(button, cooldownUntil, cooldownKey);
+                        } else {
+                            button.textContent = 'শুরু করুন';
+                            button.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors';
+                            button.disabled = false;
+                            const jobLink = button.getAttribute('data-job-link') || '#';
+                            button.onclick = () => handleJobClick(i, jobLink, 'daily');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error updating job button states:", error);
+            }
+        }
+
+        function startCooldownTimer(button, cooldownUntil, cooldownKey) {
+            button.disabled = true;
+            button.onclick = null;
+            
+            updateButtonCooldownText(button, cooldownUntil);
+            
+            const timerId = setInterval(() => {
+                updateButtonCooldownText(button, cooldownUntil);
+            }, 60000);
+            
+            jobTimers[cooldownKey] = timerId;
+        }
+
+        function updateButtonCooldownText(button, cooldownUntil) {
+            const now = new Date();
+            const timeDiff = cooldownUntil - now;
+            
+            if (timeDiff <= 0) {
+                button.textContent = 'শুরু করুন';
+                button.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors';
+                button.disabled = false;
+                
+                const cooldownKey = Object.keys(jobTimers).find(key => jobTimers[key] === this);
+                if (cooldownKey) {
+                    clearInterval(jobTimers[cooldownKey]);
+                    delete jobTimers[cooldownKey];
+                }
+                
+                return;
+            }
+            
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            button.innerHTML = `কুলডাউন <span class="timer">${hours}ঘ ${minutes}মি</span>`;
+            button.className = 'bg-red-600 text-white px-4 py-2 rounded-lg font-medium cursor-not-allowed';
+        }
+
+        function startCooldownTimers() {
+            updateJobButtonStates();
+        }
+
+        // Initialize the app
+        startCooldownTimers();
+    </script>
+</body>
+</html>
